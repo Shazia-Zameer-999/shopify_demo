@@ -1,140 +1,7 @@
-// import Image from "next/image";
-// import Link from "next/link";
-
-// // GraphQL query to search for products
-// const SEARCH_QUERY = `
-//   query ProductsSearch($query: String!) {
-//     products(first: 20, query: $query) {
-//       edges {
-//         node {
-//           id
-//           title
-//           handle
-//           featuredImage {
-//             url
-//             altText
-//           }
-//           priceRange {
-//             minVariantPrice {
-//               amount
-//               currencyCode
-//             }
-//           }
-//         }
-//       }
-//     }
-//   }
-// `;
-
-// // Function to call Shopify API
-// async function searchProducts(query) {
-//   const URL = `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`;
-
-//   const response = await fetch(URL, {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       "X-Shopify-Storefront-Access-Token": process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN,
-//     },
-//     body: JSON.stringify({
-//       query: SEARCH_QUERY,
-//       variables: { query }
-//     }),
-//     cache: "no-store"
-//   });
-
-//   const data = await response.json();
-//   return data.data?.products?.edges || [];
-// }
-
-// // Main page component
-// export default async function SearchPage({ searchParams }) {
-//   // Get the search query from URL (?q=snowboard)
-//   const params = await searchParams;
-//   const query = params?.q || "";
-
-//   // If no search term, show message
-//   if (!query) {
-//     return (
-//       <div className="container mx-auto px-4 py-16 text-center">
-//         <h1 className="text-3xl font-bold mb-4">Search Products</h1>
-//         <p className="text-gray-600">Use the search bar to find products</p>
-//       </div>
-//     );
-//   }
-
-//   // Search for products
-//   const products = await searchProducts(query);
-
-//   return (
-//     <main className="container mx-auto px-4 py-10">
-//       {/* Page title */}
-//       <h1 className="text-3xl font-bold mb-2">
-//         Search Results for "{query}"
-//       </h1>
-      
-//       {/* Count of results */}
-//       <p className="text-gray-600 mb-8">
-//         Found {products.length} product{products.length !== 1 ? "s" : ""}
-//       </p>
-
-//       {/* If no products found */}
-//       {products.length === 0 ? (
-//         <div className="text-center py-16">
-//           <p className="text-xl text-gray-600 mb-4">No products found</p>
-//           <Link href="/" className="text-blue-600 hover:underline">
-//             ← Back to all products
-//           </Link>
-//         </div>
-//       ) : (
-//         // Display products in a grid
-//         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-//           {products.map(({ node: product }) => (
-//             <Link
-//               href={`/products/${product.handle}`}
-//               key={product.id}
-//               className="group"
-//             >
-//               <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-full flex flex-col">
-//                 {/* Product Image */}
-//                 <div className="relative h-64 w-full bg-gray-200">
-//                   {product.featuredImage && (
-//                     <Image
-//                       src={product.featuredImage.url}
-//                       alt={product.featuredImage.altText || product.title}
-//                       fill
-//                       className="object-cover group-hover:scale-105 transition-transform duration-500"
-//                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-//                     />
-//                   )}
-//                 </div>
-
-//                 {/* Product Info */}
-//                 <div className="p-5 flex flex-col flex-grow">
-//                   <h2 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors line-clamp-2">
-//                     {product.title}
-//                   </h2>
-//                   <p className="text-gray-600 mt-2 mb-4">
-//                     ${product.priceRange.minVariantPrice.amount}
-//                   </p>
-//                   <button className="mt-auto w-full bg-black text-white py-2 px-4 rounded-md group-hover:bg-blue-600 transition-colors">
-//                     View Details
-//                   </button>
-//                 </div>
-//               </div>
-//             </Link>
-//           ))}
-//         </div>
-//       )}
-//     </main>
-//   );
-// }
-
 import Image from "next/image";
 import Link from "next/link";
 import { headers } from "next/headers";
 
-// GraphQL query to search for products
 const SEARCH_QUERY = `
   query ProductsSearch($query: String!, $first: Int!) {
     products(first: $first, query: $query, sortKey: RELEVANCE) {
@@ -173,7 +40,6 @@ const SEARCH_QUERY = `
   }
 `;
 
-// Function to call Shopify API
 async function searchProducts(query, limit = 24) {
   const URL = `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`;
 
@@ -195,9 +61,7 @@ async function searchProducts(query, limit = 24) {
   return data.data?.products?.edges || [];
 }
 
-// Main page component
 export default async function SearchPage({ searchParams }) {
-  // Read theme from cookie
   let theme = "dark";
   try {
     const headersList = await headers();
@@ -212,9 +76,7 @@ export default async function SearchPage({ searchParams }) {
 
   const isDark = theme === "dark";
 
-  // Get the search query from URL (?q=snowboard)
-  const params = await searchParams;
-  const query = params?.q || "";
+
 
   // Theme-aware styles
   const pageBg = isDark
@@ -238,7 +100,10 @@ export default async function SearchPage({ searchParams }) {
     ? "bg-sky-500 text-slate-950 hover:bg-sky-400 shadow-sky-500/50"
     : "bg-sky-600 text-white hover:bg-sky-500 shadow-sky-600/40";
 
-  // Search for products
+      // Get the search query from URL (?q=snowboard)
+  const params = await searchParams;
+  const query = params?.q || "";
+
   const products = query ? await searchProducts(query) : [];
 
   // Calculate discount percentage helper
@@ -255,7 +120,6 @@ export default async function SearchPage({ searchParams }) {
 
   return (
     <main className={`min-h-screen ${pageBg}`}>
-      {/* Background gradients */}
       {isDark ? (
         <>
           <div className="pointer-events-none fixed inset-0 -z-20 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900" />

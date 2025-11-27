@@ -8,7 +8,15 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "shopify.com",
-      }
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "i.pinimg.com",
+      },
     ],
   },
 };

@@ -1,83 +1,3 @@
-// "use client";
-
-// import { useRouter, useSearchParams } from "next/navigation";
-
-// export default function Pagination({ hasNextPage, hasPreviousPage, endCursor, startCursor }) {
-//   const router = useRouter();
-//   const searchParams = useSearchParams();
-  
-//   // Get current page from URL (default to 1)
-//   const currentPage = parseInt(searchParams.get("page") || "1");
-
-//   function goToNextPage() {
-//     if (!endCursor) return;
-//     const nextPage = currentPage + 1;
-//     router.push(`/?after=${encodeURIComponent(endCursor)}&page=${nextPage}`);
-//   }
-
-//   function goToPreviousPage() {
-//     if (!startCursor) return;
-//     const prevPage = Math.max(1, currentPage - 1);
-    
-//     if (prevPage === 1) {
-//       // Go back to first page (no URL params)
-//       router.push("/");
-//     } else {
-//       router.push(`/?before=${encodeURIComponent(startCursor)}&page=${prevPage}`);
-//     }
-//   }
-
-//   function goToFirstPage() {
-//     router.push("/");
-//   }
-
-//   const isFirstPage = !hasPreviousPage;
-
-//   return (
-//     <div className="flex flex-col items-center gap-4 mt-10">
-//       {/* Page Number Display */}
-//       <div className="text-lg font-semibold text-gray-700">
-//         Page {currentPage}
-//       </div>
-
-//       {/* Navigation Buttons */}
-//       <div className="flex items-center gap-4">
-//         {/* First Page Button */}
-//         {!isFirstPage && (
-//           <button
-//             onClick={goToFirstPage}
-//             className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
-//           >
-//             First
-//           </button>
-//         )}
-
-//         {/* Previous Button */}
-//         <button
-//           onClick={goToPreviousPage}
-//           disabled={!hasPreviousPage}
-//           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-//         >
-//           ← Previous
-//         </button>
-
-//         {/* Current Page Badge */}
-//         <div className="px-4 py-2 bg-blue-100 text-blue-700 rounded font-bold border-2 border-blue-600">
-//           {currentPage}
-//         </div>
-
-//         {/* Next Button */}
-//         <button
-//           onClick={goToNextPage}
-//           disabled={!hasNextPage}
-//           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-//         >
-//           Next →
-//         </button>
-//       </div>
-//     </div>
-//   );
-// }
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -92,9 +12,8 @@ export default function Pagination({
   const searchParams = useSearchParams();
 
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
-  const theme = searchParams.get("theme") === "light" ? "light" : "dark"; // default dark
+  const theme = searchParams.get("theme") === "light" ? "light" : "dark";
 
-  // Build URL while preserving all other query params (including theme)
   function buildUrl(params) {
     const p = new URLSearchParams(searchParams.toString());
 
@@ -163,7 +82,6 @@ export default function Pagination({
 
   const isFirstPage = !hasPreviousPage || currentPage === 1;
 
-  // Theme‑aware classes
   const shell =
     theme === "light"
       ? "border-slate-200 bg-white text-slate-700 shadow-sm shadow-slate-200"

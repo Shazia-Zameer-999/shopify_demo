@@ -9,7 +9,6 @@ export default function ImageGallery({ images, featuredImage, productTitle, isDa
   const [touchEnd, setTouchEnd] = useState(0);
   const imageRef = useRef(null);
 
-  // Build gallery from images array, or fallback to featuredImage if no images
   const allImages = images && images.length > 0
     ? images.map(({ node }) => ({ 
         url: node.url, 
@@ -55,7 +54,6 @@ export default function ImageGallery({ images, featuredImage, productTitle, isDa
     }
   };
 
-  // Keyboard navigation (Arrow keys)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "ArrowLeft" && currentIndex > 0) {
@@ -93,7 +91,7 @@ export default function ImageGallery({ images, featuredImage, productTitle, isDa
           />
 
           {/* Navigation arrows - desktop only */}
-          {allImages.length > 1 && (
+          {allImages.length > 0 && (
             <>
               <button
                 type="button"

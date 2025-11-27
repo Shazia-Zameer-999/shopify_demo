@@ -8,12 +8,10 @@ export default function AddToCart({ variantId }) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
   
-  // Read theme from cookie
   const theme = getCookie(THEME_COOKIE) || "dark";
   const isDark = theme === "dark";
 
   async function handleAction(action) {
-    // Set specific loading state
     if (action === "buyNow") {
       setIsBuyingNow(true);
     } else {
@@ -28,19 +26,14 @@ export default function AddToCart({ variantId }) {
       }
 
       const existingCartId = getCartId();
-      console.log("🔍 Stored Cart ID:", existingCartId);
 
       let resultCart;
       if (existingCartId) {
-        console.log("📦 Adding to existing cart...");
         resultCart = await addItemToExistingCart(existingCartId, variantId, {
           saveCart: true,
         });
-        console.log("✅ Added to existing cart:", resultCart);
       } else {
-        console.log("🆕 Creating new cart...");
         resultCart = await createNewCart(variantId, { saveCart: true });
-        console.log("✅ New cart created:", resultCart);
       }
 
       alert("Added to cart!");
@@ -48,7 +41,6 @@ export default function AddToCart({ variantId }) {
       console.error("❌ Cart error:", err);
       alert("Something went wrong. Check console for details.");
     } finally {
-      // Reset specific loading state
       if (action === "buyNow") {
         setIsBuyingNow(false);
       } else {
@@ -57,7 +49,6 @@ export default function AddToCart({ variantId }) {
     }
   }
 
-  // ...existing createNewCart, addItemToExistingCart, shopifyFetch functions stay the same...
 
   async function createNewCart(variantId, { saveCart = true } = {}) {
     const query = `mutation cartCreate($lines: [CartLineInput!]!) {
@@ -70,7 +61,6 @@ export default function AddToCart({ variantId }) {
       lines: [{ merchandiseId: variantId, quantity: 1 }],
     });
 
-    console.log("🛒 createNewCart response:", data);
 
     if (
       saveCart &&
@@ -79,11 +69,9 @@ export default function AddToCart({ variantId }) {
       data.cartCreate.cart &&
       data.cartCreate.cart.id
     ) {
-      console.log("💾 Saving cart ID:", data.cartCreate.cart.id);
       setCartId(data.cartCreate.cart.id);
 
       const saved = getCartId();
-      console.log("✔️ Verified saved cart ID:", saved);
     }
 
     return data.cartCreate;
@@ -105,7 +93,6 @@ export default function AddToCart({ variantId }) {
       lines: [{ merchandiseId: variantId, quantity: 1 }],
     });
 
-    console.log("➕ addItemToExistingCart response:", data);
 
     if (
       saveCart &&
@@ -114,7 +101,6 @@ export default function AddToCart({ variantId }) {
       data.cartLinesAdd.cart &&
       data.cartLinesAdd.cart.id
     ) {
-      console.log("💾 Updating cart ID:", data.cartLinesAdd.cart.id);
       setCartId(data.cartLinesAdd.cart.id);
     }
 
@@ -150,7 +136,6 @@ export default function AddToCart({ variantId }) {
     return json.data;
   }
 
-  // Theme‑aware base styles with hover animations
   const primaryBase = `
     group/btn relative w-full overflow-hidden rounded-full px-8 py-3.5 
     text-sm sm:text-base font-semibold 
