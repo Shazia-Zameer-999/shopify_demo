@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@sanity/client": "^7.13.1",
+    "@sanity/image-url": "^2.0.1",
     "components": "^0.1.0",
     "cookies-next": "^6.1.1",
     "figma": "^0.0.1",
+    "groq": "^4.19.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.554.0",
     "mongoose": "^9.0.0",

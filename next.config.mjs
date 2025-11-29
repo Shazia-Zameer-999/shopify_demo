@@ -17,6 +17,12 @@ const nextConfig = {
         protocol: "https",
         hostname: "i.pinimg.com",
       },
+      // Sanity image CDN (required for Next Image to accept Sanity image URLs)
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+        pathname: "/images/**",
+      },
     ],
   },
 };
