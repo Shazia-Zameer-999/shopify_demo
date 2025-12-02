@@ -33,38 +33,51 @@ export default function Header() {
   const isAuthenticated = status === "authenticated";
   const userName = session?.user?.name || "Account";
 
-const fetchCartCount = useCallback(async () => {
-  try {
-    const response = await fetch("/api/cart/count", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (!response.ok) {
-      setCartCount(0);
-      return;
-    }
-
-    const data = await response.json();
-    const totalItems =
-      data.cart?.lines?.edges?.reduce(
-        (sum, edge) => sum + (edge.node.quantity || 0),
-        0,
-      ) || 0;
-
-    setCartCount(totalItems);
-  } catch (error) {
-    console.error("Error fetching cart count:", error);
-    setCartCount(0);
-  }
-}, []);
-
-
-  const fetchWishlistCount = useCallback(() => {
+  const fetchCartCount = useCallback(async () => {
     try {
-      const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-      setWishlistCount(wishlist.length);
-    } catch {
+      const response = await fetch("/api/cart/count", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        setCartCount(0);
+        return;
+      }
+
+      const data = await response.json();
+      const totalItems =
+        data.cart?.lines?.edges?.reduce(
+          (sum, edge) => sum + (edge.node.quantity || 0),
+          0,
+        ) || 0;
+
+      setCartCount(totalItems);
+    } catch (error) {
+      console.error("Error fetching cart count:", error);
+      setCartCount(0);
+    }
+  }, []);
+
+
+  const fetchWishlistCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/wishlist/count", { method: "GET" });
+
+      if (!res.ok) return setWishlistCount(0);
+
+      const data = await res.json();
+
+      if (data.isAuthenticated) {
+        // Logged-in user → use DB
+        setWishlistCount(data.count);
+      } else {
+        // Guest → use localStorage
+        const stored = JSON.parse(localStorage.getItem("wishlist") || "[]");
+        setWishlistCount(stored.length);
+      }
+    } catch (err) {
+      console.error("Wishlist count error:", err);
       setWishlistCount(0);
     }
   }, []);
@@ -72,10 +85,10 @@ const fetchCartCount = useCallback(async () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentAnnouncement((prev) => (prev + 1) % ANNOUNCEMENTS.length);
-    }, 5000);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
-  
+
 
   // Scroll progress
   useEffect(() => {
@@ -117,14 +130,18 @@ const fetchCartCount = useCallback(async () => {
   }, [fetchCartCount, fetchWishlistCount]);
 
   useEffect(() => {
-    const interval = setInterval(fetchCartCount, 3000);
+    const interval = setInterval(fetchCartCount, 1000);
     return () => clearInterval(interval);
   }, [fetchCartCount]);
+  useEffect(() => {
+    const interval = setInterval(fetchWishlistCount, 1000);
+    return () => clearInterval(interval);
+  }, [fetchWishlistCount]);
 
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
-  
+
 
   if (!mounted) return null;
 
@@ -136,7 +153,7 @@ const fetchCartCount = useCallback(async () => {
     setCookie(THEME_COOKIE, next);
     router.refresh();
   }
-  
+
 
   return (
     <header className="sticky top-0 z-50">

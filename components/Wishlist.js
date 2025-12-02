@@ -1,4 +1,6 @@
-"use client";
+ "use client";
+
+import { useSession } from "next-auth/react";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -14,16 +16,25 @@ export default function WishlistPage({ theme: initialTheme }) {
   const [addingToCart, setAddingToCart] = useState(null);
   const [theme, setTheme] = useState(initialTheme || "dark");
   const [mounted, setMounted] = useState(false);
+  const { data: session, status } = useSession();
+  const isLoggedIn = status === "authenticated";
 
-  // Initialize theme and wishlist on mount
+  // Initialize theme on mount
   useEffect(() => {
     const stored = getCookie(THEME_COOKIE);
     if (stored === "light" || stored === "dark") {
       setTheme(stored);
     }
-    loadWishlist();
     setMounted(true);
   }, []);
+
+  // Load wishlist when auth status is known
+  useEffect(() => {
+    if (!mounted) return;
+    if (status === "loading") return; // wait for NextAuth
+
+    loadWishlist(status);
+  }, [mounted, status]);
 
   // Listen for real-time theme changes from Header
   useEffect(() => {
@@ -33,6 +44,7 @@ export default function WishlistPage({ theme: initialTheme }) {
         setTheme(stored);
       }
     };
+    
 
     // Listen for custom theme change event
     window.addEventListener("themeChange", handleThemeChange);
@@ -48,98 +60,100 @@ export default function WishlistPage({ theme: initialTheme }) {
         setTheme(stored);
       }
     };
+    
 
     // Check theme every 500ms (lightweight polling)
-    const interval = setInterval(checkThemeChange, 100);
+    const interval = setInterval(checkThemeChange, 50);
     
     return () => clearInterval(interval);
   }, []);
 
-  function loadWishlist() {
-    try {
-      const stored = localStorage.getItem("wishlist");
+  async function loadWishlist(currentStatus) {
+  try {
+    const loggedIn = currentStatus === "authenticated";
+
+    if (loggedIn) {
+      const res = await fetch("/api/wishlist/get");
+      const data = await res.json();
+      setWishlist(data.wishlist || []);
+    } else {
+      const stored = typeof window !== "undefined"
+        ? localStorage.getItem("wishlist")
+        : null;
       const items = stored ? JSON.parse(stored) : [];
       setWishlist(items);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error loading wishlist:", error);
-      setWishlist([]);
-      setLoading(false);
     }
-  }
 
-  function removeFromWishlist(productId) {
+    setLoading(false);
+  } catch (error) {
+    console.error("Error loading wishlist:", error);
+    setWishlist([]);
+    setLoading(false);
+  }
+}
+
+  async function removeFromWishlist(productId, variantId) {
     setRemoving(productId);
-    
-    setTimeout(() => {
-      try {
+
+    try {
+      if (isLoggedIn) {
+        const res = await fetch("/api/wishlist/remove", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: productId, variantId }),
+        });
+
+        if (!res.ok) {
+          console.error("Failed to remove from wishlist in DB");
+        } else {
+          // Optimistically update local UI for logged-in user
+          setWishlist((prev) =>
+            prev.filter(
+              (item) => item.id !== productId && item.variantId !== variantId,
+            ),
+          );
+        }
+      } else {
         const updated = wishlist.filter((item) => item.id !== productId);
         localStorage.setItem("wishlist", JSON.stringify(updated));
         setWishlist(updated);
-        
-        window.dispatchEvent(
-          new CustomEvent("wishlistUpdated", {
-            detail: { message: "Item removed from wishlist!" },
-          })
-        );
-      } catch (error) {
-        console.error("Error removing from wishlist:", error);
-      } finally {
-        setRemoving(null);
       }
-    }, 300);
+
+      window.dispatchEvent(new Event("wishlistUpdated"));
+    } catch (error) {
+      console.error("Error removing from wishlist:", error);
+    } finally {
+      setRemoving(null);
+    }
   }
 
-  async function addToCart(product) {
-    setAddingToCart(product.id);
-    
-    try {
-      const cartId = localStorage.getItem("shopify_cart_id");
-      
-      if (!cartId) {
-        console.error("No cart ID found");
-        setAddingToCart(null);
+
+
+async function clearWishlist() {
+  if (!confirm("Are you sure you want to clear your entire wishlist?")) return;
+
+  try {
+    if (isLoggedIn) {
+      const res = await fetch("/api/wishlist/clear", {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        console.error("Failed to clear wishlist in DB");
         return;
       }
 
-      const response = await fetch("/api/cart/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cartId,
-          merchandiseId: product.variantId,
-          quantity: 1,
-        }),
-      });
-
-      if (response.ok) {
-        window.dispatchEvent(
-          new CustomEvent("cartUpdated", {
-            detail: { message: "Added to cart!" },
-          })
-        );
-        
-        removeFromWishlist(product.id);
-      }
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-    } finally {
-      setAddingToCart(null);
-    }
-  }
-
-  function clearWishlist() {
-    if (confirm("Are you sure you want to clear your entire wishlist? This cannot be undone.")) {
+      setWishlist([]);
+    } else {
       localStorage.setItem("wishlist", JSON.stringify([]));
       setWishlist([]);
-      
-      window.dispatchEvent(
-        new CustomEvent("wishlistUpdated", {
-          detail: { message: "Wishlist cleared!" },
-        })
-      );
     }
+
+    window.dispatchEvent(new Event("wishlistUpdated"));
+  } catch (error) {
+    console.error("Error clearing wishlist:", error);
   }
+}
 
   if (!mounted || loading) {
     return (
@@ -280,7 +294,7 @@ export default function WishlistPage({ theme: initialTheme }) {
                   }`}
                 >
                   {/* Product Image */}
-                  <Link href={`/product/${item.handle}`} className={`block relative aspect-square overflow-hidden ${
+                  <Link href={`/products/${item.handle}`} className={`block relative aspect-square overflow-hidden ${
                     isDark ? "bg-slate-800/50" : "bg-slate-100"
                   }`}>
                     <Image
@@ -301,7 +315,7 @@ export default function WishlistPage({ theme: initialTheme }) {
 
                   {/* Remove Button */}
                   <button
-                    onClick={() => removeFromWishlist(item.id)}
+                    onClick={() => removeFromWishlist(item.id, item.variantId)}
                     disabled={removing === item.id}
                     className={`absolute top-3 right-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur-xl shadow-lg transition-all duration-200 group/btn disabled:opacity-50 ${
                       isDark
@@ -316,7 +330,7 @@ export default function WishlistPage({ theme: initialTheme }) {
 
                   {/* Product Info */}
                   <div className="p-5">
-                    <Link href={`/product/${item.handle}`}>
+                    <Link href={`/products/${item.handle}`}>
                       <h3 className={`text-base font-bold mb-2 line-clamp-2 transition-colors ${
                         isDark
                           ? "text-slate-100 group-hover:text-sky-300"
@@ -333,7 +347,7 @@ export default function WishlistPage({ theme: initialTheme }) {
                     )}
 
                     {/* Add to Cart Button */}
-                    <button
+                    {/* <button
                       onClick={() => addToCart(item)}
                       disabled={addingToCart === item.id}
                       className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-500/50 hover:from-sky-400 hover:to-blue-500 hover:shadow-sky-400/60 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 group/cart disabled:opacity-50 disabled:cursor-not-allowed"
@@ -351,7 +365,7 @@ export default function WishlistPage({ theme: initialTheme }) {
                           <span>Add to Cart</span>
                         </>
                       )}
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               ))}

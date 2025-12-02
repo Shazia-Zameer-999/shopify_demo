@@ -17,7 +17,18 @@ const UserSchema = new mongoose.Schema(
 
     // Optional extras for later
     savedCartId: { type: String }, // Shopify cart id if you want
+    wishlist: [
+      {
+        id: String,
+        title: String,
+        handle: String,
+        image: String,
+        variantId: String,
+        price: String,
+      }
+    ],
   },
+
   { timestamps: true }
 );
 

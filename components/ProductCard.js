@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 // Add this function!
 function getDiscount(product) {
@@ -19,11 +20,13 @@ function getDiscount(product) {
 export default function ProductCard({ product, dark }) {
     const [isInWishlist, setIsInWishlist] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const { status } = useSession();
+    const isLoggedIn = status === "authenticated";
 
     useEffect(() => {
         setMounted(true);
         checkWishlist();
-    }, [product.id]);
+    }, [product.id, isLoggedIn]);
 
     // Listen for wishlist updates from other components
     useEffect(() => {
@@ -33,43 +36,95 @@ export default function ProductCard({ product, dark }) {
 
         window.addEventListener("wishlistUpdated", handleWishlistUpdate);
         return () => window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
-    }, []);
+    }, [isLoggedIn]);
 
-    function checkWishlist() {
+    async function checkWishlist() {
         try {
-            const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-            setIsInWishlist(wishlist.some((item) => item.id === product.id));
-        } catch {
+            if (isLoggedIn) {
+                // For authenticated users, read from DB via API
+                const res = await fetch("/api/wishlist/get");
+                if (!res.ok) {
+                    setIsInWishlist(false);
+                    return;
+                }
+                const data = await res.json();
+                const list = Array.isArray(data.wishlist) ? data.wishlist : [];
+                setIsInWishlist(
+                    list.some(
+                        (item) => item.id === product.id || item.variantId === product.id,
+                    ),
+                );
+            } else {
+                // For guests, read from localStorage
+                const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+                setIsInWishlist(wishlist.some((item) => item.id === product.id));
+            }
+        } catch (error) {
+            console.error("Error checking wishlist:", error);
             setIsInWishlist(false);
         }
     }
 
-    function toggleWishlist(e) {
+    async function toggleWishlist(e) {
         e.preventDefault();
         e.stopPropagation();
 
         try {
-            const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-            const index = wishlist.findIndex((item) => item.id === product.id);
-
-            if (index > -1) {
-                wishlist.splice(index, 1);
-                setIsInWishlist(false);
+            // Logged-in users: use backend APIs
+            if (isLoggedIn) {
+                if (isInWishlist) {
+                    // Remove from DB wishlist
+                    await fetch("/api/wishlist/remove", {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            id: product.id,
+                            variantId: product.id,
+                        }),
+                    });
+                    setIsInWishlist(false);
+                } else {
+                    // Add to DB wishlist
+                    const price = parseFloat(product.priceRange.minVariantPrice.amount);
+                    await fetch("/api/wishlist/add", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            id: product.id,
+                            title: product.title,
+                            handle: product.handle,
+                            price,
+                            image: product.featuredImage?.url || "/placeholder.png",
+                            variantId: product.id,
+                        }),
+                    });
+                    setIsInWishlist(true);
+                }
             } else {
-                const price = parseFloat(product.priceRange.minVariantPrice.amount);
-                wishlist.push({
-                    id: product.id,
-                    title: product.title,
-                    handle: product.handle,
-                    price: price,
-                    image: product.featuredImage?.url || "/placeholder.png",
-                    variantId: product.id,
-                });
-                setIsInWishlist(true);
+                // Guest users: use localStorage
+                const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
+                const index = wishlist.findIndex((item) => item.id === product.id);
+
+                if (index > -1) {
+                    wishlist.splice(index, 1);
+                    setIsInWishlist(false);
+                } else {
+                    const price = parseFloat(product.priceRange.minVariantPrice.amount);
+                    wishlist.push({
+                        id: product.id,
+                        title: product.title,
+                        handle: product.handle,
+                        price,
+                        image: product.featuredImage?.url || "/placeholder.png",
+                        variantId: product.id,
+                    });
+                    setIsInWishlist(true);
+                }
+
+                localStorage.setItem("wishlist", JSON.stringify(wishlist));
             }
 
-            localStorage.setItem("wishlist", JSON.stringify(wishlist));
-
+            // Notify the rest of the app that wishlist changed
             window.dispatchEvent(
                 new CustomEvent("wishlistUpdated", {
                     detail: { message: isInWishlist ? "Removed from wishlist" : "Added to wishlist!" },
@@ -255,5 +310,3 @@ export default function ProductCard({ product, dark }) {
         </Link>
     );
 }
-
-
