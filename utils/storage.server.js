@@ -6,7 +6,6 @@ export async function getCartIdServer() {
   const cookieStore = await cookies();
   const cartCookie = cookieStore.get(CART_KEY);
   
-  console.log("🍪 Server: Reading cookie:", CART_KEY);
   
   if (!cartCookie?.value) {
     console.log("🍪 Cookie value: NOT FOUND");
@@ -16,8 +15,7 @@ export async function getCartIdServer() {
   try {
     // Decode the URI-encoded cart ID
     const decoded = decodeURIComponent(cartCookie.value);
-    console.log("🍪 Cookie value (encoded):", cartCookie.value);
-    console.log("🍪 Cookie value (decoded):", decoded);
+
     return decoded;
   } catch (e) {
     console.error("❌ Failed to decode cart ID:", e);

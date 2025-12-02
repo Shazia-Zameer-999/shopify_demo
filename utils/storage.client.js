@@ -21,8 +21,7 @@ export function setCartId(cartId) {
   // Encode the cart ID to preserve special characters
   const encoded = encodeURIComponent(cartId);
   
-  console.log("💾 Saving cart ID (raw):", cartId);
-  console.log("💾 Saving cart ID (encoded):", encoded);
+
   
   Cookies.set(CART_KEY, encoded, { 
     expires: 20,

@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { getCookie, setCookie, THEME_COOKIE } from "../utils/storage.client";
 import { getCartId } from "../utils/storage.client";
 import SearchBar from "./SearchBar";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 const ANNOUNCEMENTS = [
   { text: "🎿 Winter Sale: Up to 40% off selected boards", highlight: "40% off" },
@@ -28,33 +29,36 @@ export default function Header() {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [showCartNotification, setShowCartNotification] = useState(false);
 
-  const fetchCartCount = useCallback(async () => {
-    try {
-      const cartId = getCartId();
-      if (!cartId) {
-        setCartCount(0);
-        return;
-      }
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated";
+  const userName = session?.user?.name || "Account";
 
-      const response = await fetch("/api/cart/count", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cartId }),
-      });
+const fetchCartCount = useCallback(async () => {
+  try {
+    const response = await fetch("/api/cart/count", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        const totalItems = data.cart?.lines?.edges?.reduce(
-          (sum, edge) => sum + edge.node.quantity,
-          0
-        ) || 0;
-        setCartCount(totalItems);
-      }
-    } catch (error) {
-      console.error("Error fetching cart count:", error);
+    if (!response.ok) {
       setCartCount(0);
+      return;
     }
-  }, []);
+
+    const data = await response.json();
+    const totalItems =
+      data.cart?.lines?.edges?.reduce(
+        (sum, edge) => sum + (edge.node.quantity || 0),
+        0,
+      ) || 0;
+
+    setCartCount(totalItems);
+  } catch (error) {
+    console.error("Error fetching cart count:", error);
+    setCartCount(0);
+  }
+}, []);
+
 
   const fetchWishlistCount = useCallback(() => {
     try {
@@ -71,6 +75,7 @@ export default function Header() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+  
 
   // Scroll progress
   useEffect(() => {
@@ -112,13 +117,14 @@ export default function Header() {
   }, [fetchCartCount, fetchWishlistCount]);
 
   useEffect(() => {
-    const interval = setInterval(fetchCartCount, 30000);
+    const interval = setInterval(fetchCartCount, 3000);
     return () => clearInterval(interval);
   }, [fetchCartCount]);
 
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+  
 
   if (!mounted) return null;
 
@@ -130,6 +136,7 @@ export default function Header() {
     setCookie(THEME_COOKIE, next);
     router.refresh();
   }
+  
 
   return (
     <header className="sticky top-0 z-50">
@@ -291,16 +298,50 @@ export default function Header() {
               </button>
 
               {/* Account - Hidden on sm and below, shown from md */}
+              {/* Account - Hidden on sm and below, shown from md */}
               <button
                 type="button"
-                onClick={() => router.push('/account')}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    // Opens NextAuth sign-in (we'll customize providers/UI later)
+                    signIn();
+                  } else {
+                    router.push("/account");
+                  }
+                }}
                 className="hidden md:inline-flex items-center gap-2 rounded-xl border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm font-medium text-slate-200 shadow-lg hover:border-sky-400/70 hover:bg-slate-800/80 hover:text-sky-300 hover:shadow-sky-500/30 transition-all duration-200 group"
               >
                 <svg className="h-4.5 w-4.5 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span className="hidden lg:inline">Account</span>
+                <span className="hidden lg:inline">
+                  {isAuthenticated ? userName : "Sign In"}
+                </span>
               </button>
+              {/* Sign Out - desktop only, visible when authenticated */}
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="hidden lg:inline-flex items-center gap-2 rounded-xl border border-slate-700/50 bg-slate-900/60 px-3 py-2 text-sm font-medium text-slate-200 shadow-lg hover:border-rose-400/70 hover:bg-slate-800/80 hover:text-rose-300 hover:shadow-rose-500/30 transition-all duration-200 group"
+                >
+                  <svg
+                    className="h-4.5 w-4.5 group-hover:scale-110 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H9m4 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1"
+                    />
+                  </svg>
+                  <span className="hidden xl:inline">Sign Out</span>
+                  <span className="xl:hidden">Logout</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -707,7 +748,11 @@ export default function Header() {
                 <button
                   onClick={() => {
                     setMenuOpen(false);
-                    router.push('/account');
+                    if (!isAuthenticated) {
+                      signIn();
+                    } else {
+                      router.push("/account");
+                    }
                   }}
                   className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-slate-300 hover:bg-slate-900/80 hover:text-sky-300 transition-all duration-200 group"
                   style={{
@@ -719,8 +764,38 @@ export default function Header() {
                   <svg className="h-4.5 w-4.5 group-hover:scale-110 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <span>Sign In / Register</span>
+                  <span>{isAuthenticated ? "Go to Account" : "Sign In / Register"}</span>
                 </button>
+                {/* Sign Out - mobile menu, only when authenticated */}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      signOut({ callbackUrl: "/" });
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-slate-300 hover:bg-slate-900/80 hover:text-rose-300 transition-all duration-200 group"
+                    style={{
+                      animation: 'slideInItem 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                      animationDelay: '0.40s',
+                      opacity: 0
+                    }}
+                  >
+                    <svg
+                      className="h-4.5 w-4.5 group-hover:scale-110 transition-transform duration-200"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H9m4 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1"
+                      />
+                    </svg>
+                    <span>Sign Out</span>
+                  </button>
+                )}
 
                 {/* Theme Toggle */}
                 <button

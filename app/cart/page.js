@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import CartActions from "@/components/CartActions";
 import { headers } from "next/headers";
+import { getCartContext } from "@/lib/cartContext";
+
 
 const GET_CART_QUERY = `
   query GetCart($cartId: ID!) {
@@ -72,8 +74,7 @@ export default async function CartPage() {
   
   const isDark = theme === "dark";
 
-  const cartId = await getCartIdServer();
-
+const { cartId } = await getCartContext({ allowCookieWrite: false });
   const pageBg = isDark
     ? "bg-slate-950 text-slate-50"
     : "bg-slate-50 text-slate-900";
