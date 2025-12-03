@@ -18,6 +18,7 @@ export default function WishlistPage({ theme: initialTheme }) {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
   const isLoggedIn = status === "authenticated";
+  
 
   // Initialize theme on mount
   useEffect(() => {
@@ -342,7 +343,7 @@ async function clearWishlist() {
                     
                     {item.price && (
                       <p className="text-xl font-black bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent mb-4">
-                        ${parseFloat(item.price).toFixed(2)}
+                        ₹{parseFloat(item.price).toFixed(2)}
                       </p>
                     )}
 
