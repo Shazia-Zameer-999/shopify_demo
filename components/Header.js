@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import Link from "next/link";
@@ -7,13 +9,84 @@ import { getCookie, setCookie, THEME_COOKIE } from "../utils/storage.client";
 import { getCartId } from "../utils/storage.client";
 import SearchBar from "./SearchBar";
 import { useSession, signIn, signOut } from "next-auth/react";
+import Scroller from "./Scroller";
 
-const ANNOUNCEMENTS = [
-  { text: "🎿 Winter Sale: Up to 40% off selected boards", highlight: "40% off" },
-  { text: "🚚 Free shipping on orders over $99", highlight: "Free shipping" },
-  { text: "⭐ New 2025 collection now available", highlight: "New 2025" },
-  { text: "🎁 Sign up for 15% off your first order", highlight: "15% off" },
-];
+// const ANNOUNCEMENTS = [
+//   { text: "🎿 Winter Sale: Up to 40% off selected boards", highlight: "40% off" },
+//   { text: "🚚 Free shipping on orders over $99", highlight: "Free shipping" },
+//   { text: "⭐ New 2025 collection now available", highlight: "New 2025" },
+//   { text: "🎁 Sign up for 15% off your first order", highlight: "15% off" },
+// ];
+
+// Category data with images
+const CATEGORIES = {
+  snowboards: [
+    { 
+      name: 'All Mountain', 
+      image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=300&fit=crop',
+      description: 'Versatile boards for any terrain'
+    },
+    { 
+      name: 'Freestyle', 
+      image: 'https://i.pinimg.com/736x/9a/49/55/9a4955e5c5f0f39357b39f257d83895c.jpg',
+      description: 'Perfect for tricks and parks'
+    },
+    { 
+      name: 'Powder', 
+      image: 'https://images.unsplash.com/photo-1605540436563-5bca919ae766?w=400&h=300&fit=crop',
+      description: 'Deep snow specialists'
+    },
+    { 
+      name: 'Splitboards', 
+      image: 'https://i.pinimg.com/1200x/e7/40/9c/e7409c4e1d855f19f205ae727213aa80.jpg',
+      description: 'Backcountry adventures'
+    },
+  ],
+  equipment: [
+    { 
+      name: 'Bindings', 
+      image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=300&fit=crop',
+      description: 'Precision control systems'
+    },
+    { 
+      name: 'Boots', 
+      image: 'https://i.pinimg.com/1200x/fe/89/17/fe8917f6ef8bd8c1f2cd20a6ec34b416.jpg',
+      description: 'Comfort meets performance'
+    },
+    { 
+      name: 'Helmets', 
+      image: 'https://i.pinimg.com/1200x/ad/2f/08/ad2f08d444087c0fa3c467ae776cfb7e.jpg',
+      description: 'Safety first, always'
+    },
+    { 
+      name: 'Goggles', 
+      image: 'https://i.pinimg.com/736x/f8/ca/25/f8ca25b9006ec36dd8138fb22654976e.jpg',
+      description: 'Crystal clear vision'
+    },
+  ],
+  apparel: [
+    { 
+      name: 'Jackets', 
+      image: 'https://i.pinimg.com/1200x/c5/55/ef/c555ef9269df5a4ad7cab1790f4d2ad7.jpg',
+      description: 'Weather-proof protection'
+    },
+    { 
+      name: 'Pants', 
+      image: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400&h=300&fit=crop',
+      description: 'Durable and flexible'
+    },
+    { 
+      name: 'Base Layers', 
+      image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=300&fit=crop',
+      description: 'Stay warm and dry'
+    },
+    { 
+      name: 'Accessories', 
+      image: 'https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=400&h=300&fit=crop',
+      description: 'Complete your setup'
+    },
+  ],
+};
 
 export default function Header() {
   const router = useRouter();
@@ -21,9 +94,10 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
   const [theme, setTheme] = useState("dark");
   const [mounted, setMounted] = useState(false);
-  const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
+  // const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -59,7 +133,6 @@ export default function Header() {
     }
   }, []);
 
-
   const fetchWishlistCount = useCallback(async () => {
     try {
       const res = await fetch("/api/wishlist/count", { method: "GET" });
@@ -69,10 +142,8 @@ export default function Header() {
       const data = await res.json();
 
       if (data.isAuthenticated) {
-        // Logged-in user → use DB
         setWishlistCount(data.count);
       } else {
-        // Guest → use localStorage
         const stored = JSON.parse(localStorage.getItem("wishlist") || "[]");
         setWishlistCount(stored.length);
       }
@@ -82,15 +153,13 @@ export default function Header() {
     }
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentAnnouncement((prev) => (prev + 1) % ANNOUNCEMENTS.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setCurrentAnnouncement((prev) => (prev + 1) % ANNOUNCEMENTS.length);
+  //   }, 3000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
-
-  // Scroll progress
   useEffect(() => {
     const handleScroll = () => {
       const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -133,6 +202,7 @@ export default function Header() {
     const interval = setInterval(fetchCartCount, 1000);
     return () => clearInterval(interval);
   }, [fetchCartCount]);
+  
   useEffect(() => {
     const interval = setInterval(fetchWishlistCount, 1000);
     return () => clearInterval(interval);
@@ -141,7 +211,6 @@ export default function Header() {
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
-
 
   if (!mounted) return null;
 
@@ -153,7 +222,6 @@ export default function Header() {
     setCookie(THEME_COOKIE, next);
     router.refresh();
   }
-
 
   return (
     <header className="sticky top-0 z-50">
@@ -179,8 +247,8 @@ export default function Header() {
           </div>
         </div>
       )}
-
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/50">
+<Scroller />
+      {/* <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/50">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-2">
@@ -225,14 +293,14 @@ export default function Header() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main header */}
       <div className="border-b border-slate-800/70 bg-gradient-to-b from-slate-950/98 via-slate-950/95 to-slate-950/90 backdrop-blur-xl shadow-xl shadow-black/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Top bar */}
           <div className="flex h-20 items-center justify-between gap-4">
-            {/* Left: Logo */}
+            {/* Logo */}
             <Link
               href="/"
               className="group flex items-center gap-3 whitespace-nowrap"
@@ -284,7 +352,7 @@ export default function Header() {
               <SearchBar />
             </div>
 
-            {/* Right: Actions - FIXED RESPONSIVE CLASSES */}
+            {/* Right: Actions */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -297,7 +365,6 @@ export default function Header() {
                 </svg>
               </button>
 
-              {/* Wishlist - Hidden on xs, shown from sm */}
               <button
                 type="button"
                 onClick={() => router.push('/wishlist')}
@@ -314,13 +381,10 @@ export default function Header() {
                 )}
               </button>
 
-              {/* Account - Hidden on sm and below, shown from md */}
-              {/* Account - Hidden on sm and below, shown from md */}
               <button
                 type="button"
                 onClick={() => {
                   if (!isAuthenticated) {
-                    // Opens NextAuth sign-in (we'll customize providers/UI later)
                     signIn();
                   } else {
                     router.push("/account");
@@ -335,7 +399,7 @@ export default function Header() {
                   {isAuthenticated ? userName : "Sign In"}
                 </span>
               </button>
-              {/* Sign Out - desktop only, visible when authenticated */}
+
               {isAuthenticated && (
                 <button
                   type="button"
@@ -369,7 +433,6 @@ export default function Header() {
                 <span className="text-lg group-hover:scale-110 transition-transform">{isDark ? "☀️" : "🌙"}</span>
               </button>
 
-              {/* Cart - Always visible */}
               <Link
                 href="/cart"
                 className="relative inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-xl shadow-sky-500/60 hover:from-sky-400 hover:to-blue-500 hover:shadow-sky-400/70 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sky-500/40 transition-all duration-200 group"
@@ -385,7 +448,6 @@ export default function Header() {
                 )}
               </Link>
 
-              {/* Hamburger - ALWAYS VISIBLE ON MOBILE (hidden from md breakpoint) */}
               <button
                 type="button"
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -422,7 +484,10 @@ export default function Header() {
               <div
                 className="relative"
                 onMouseEnter={() => setCategoriesOpen(true)}
-                onMouseLeave={() => setCategoriesOpen(false)}
+                onMouseLeave={() => {
+                  setCategoriesOpen(false);
+                  setHoveredItem(null);
+                }}
               >
                 <button className="group relative flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-sky-300 transition-colors overflow-hidden rounded-lg px-3 py-2">
                   <span className="absolute inset-0 bg-gradient-to-r from-sky-500/0 via-sky-500/10 to-sky-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
@@ -443,142 +508,158 @@ export default function Header() {
                 </button>
 
                 {categoriesOpen && (
-                  <div className="absolute left-0 top-full pt-4 z-50">
-                    <div className="w-[680px] rounded-2xl border border-slate-800/80 bg-slate-950/98 backdrop-blur-2xl shadow-2xl shadow-black/80 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
-                      <div className="relative bg-gradient-to-r from-sky-500/10 via-blue-500/10 to-purple-500/10 border-b border-slate-800/60 px-7 py-4">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.1),transparent_70%)]" />
-                        <h2 className="relative text-sm font-bold text-slate-200">Shop by Category</h2>
-                        <p className="relative text-xs text-slate-400 mt-0.5">Explore our complete collection</p>
+                  <div className="absolute left-0 top-full pt-6 z-50">
+                    <div className="w-[1300px] rounded-2xl border border-slate-800/50 bg-slate-950/95 backdrop-blur-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      
+                      {/* Clean Header */}
+                      <div className="px-10 py-8 border-b border-slate-800/50">
+                        <h2 className="text-base font-bold text-slate-100 mb-2">
+                          Shop by Category
+                        </h2>
+                        <p className="text-sm text-slate-400">
+                          Explore our complete collection
+                        </p>
                       </div>
 
-                      <div className="p-7">
-                        <div className="grid grid-cols-3 gap-8">
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 mb-4">
-                              <div className="h-1 w-1 rounded-full bg-sky-400 animate-pulse" />
-                              <h3 className="text-xs font-black uppercase tracking-wider bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">
+                      {/* Grid with Image Preview */}
+                      <div className="grid grid-cols-[2fr_1fr]">
+                        {/* Categories List */}
+                        <div className="p-10 border-r border-slate-800/50">
+                          <div className="grid grid-cols-3 gap-12">
+                            
+                            {/* Snowboards */}
+                            <div className="space-y-6">
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-6">
                                 Snowboards
                               </h3>
+                              <ul className="space-y-3">
+                                {CATEGORIES.snowboards.map((item) => (
+                                  <li key={item.name}>
+                                    <Link
+                                      href="/"
+                                      onMouseEnter={() => setHoveredItem(item)}
+                                      className={`group block text-sm font-medium transition-all duration-200 hover:translate-x-1 px-2 py-1.5 rounded ${
+                                        hoveredItem?.name === item.name 
+                                          ? 'text-sky-400 bg-sky-500/10' 
+                                          : 'text-slate-300 hover:text-sky-400'
+                                      }`}
+                                    >
+                                      {item.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                            <ul className="space-y-2.5">
-                              {['All Mountain', 'Freestyle', 'Powder', 'Splitboards'].map((item, idx) => (
-                                <li key={item}>
-                                  <Link
-                                    href="/"
-                                    className="group/item relative flex items-center gap-3 px-3 py-2 rounded-lg overflow-hidden transition-all duration-300 hover:bg-sky-500/5"
-                                  >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-sky-500/0 via-sky-500/20 to-sky-500/0 translate-x-[-100%] group-hover/item:translate-x-[100%] transition-transform duration-700" />
 
-                                    <span className="relative flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 border border-sky-500/20 group-hover/item:bg-sky-500/20 group-hover/item:border-sky-500/40 group-hover/item:scale-110 transition-all duration-300">
-                                      <span className="text-xs font-bold text-sky-400">{idx + 1}</span>
-                                    </span>
-
-                                    <span className="relative text-sm text-slate-300 group-hover/item:text-sky-300 group-hover/item:translate-x-1 transition-all duration-300">
-                                      {item}
-                                    </span>
-
-                                    <svg className="relative ml-auto h-3.5 w-3.5 text-slate-600 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 group-hover/item:text-sky-400 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 mb-4">
-                              <div className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />
-                              <h3 className="text-xs font-black uppercase tracking-wider bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
+                            {/* Equipment */}
+                            <div className="space-y-6">
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-6">
                                 Equipment
                               </h3>
+                              <ul className="space-y-3">
+                                {CATEGORIES.equipment.map((item) => (
+                                  <li key={item.name}>
+                                    <Link
+                                      href="/"
+                                      onMouseEnter={() => setHoveredItem(item)}
+                                      className={`group block text-sm font-medium transition-all duration-200 hover:translate-x-1 px-2 py-1.5 rounded ${
+                                        hoveredItem?.name === item.name 
+                                          ? 'text-emerald-400 bg-emerald-500/10' 
+                                          : 'text-slate-300 hover:text-emerald-400'
+                                      }`}
+                                    >
+                                      {item.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                            <ul className="space-y-2.5">
-                              {['Bindings', 'Boots', 'Helmets', 'Goggles'].map((item, idx) => (
-                                <li key={item}>
-                                  <Link
-                                    href="/"
-                                    className="group/item relative flex items-center gap-3 px-3 py-2 rounded-lg overflow-hidden transition-all duration-300 hover:bg-emerald-500/5"
-                                  >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/20 to-emerald-500/0 translate-x-[-100%] group-hover/item:translate-x-[100%] transition-transform duration-700" />
 
-                                    <span className="relative flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 border border-emerald-500/20 group-hover/item:bg-emerald-500/20 group-hover/item:border-emerald-500/40 group-hover/item:scale-110 transition-all duration-300">
-                                      <span className="text-xs font-bold text-emerald-400">{idx + 1}</span>
-                                    </span>
-
-                                    <span className="relative text-sm text-slate-300 group-hover/item:text-emerald-300 group-hover/item:translate-x-1 transition-all duration-300">
-                                      {item}
-                                    </span>
-
-                                    <svg className="relative ml-auto h-3.5 w-3.5 text-slate-600 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 group-hover/item:text-emerald-400 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 mb-4">
-                              <div className="h-1 w-1 rounded-full bg-purple-400 animate-pulse" />
-                              <h3 className="text-xs font-black uppercase tracking-wider bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                            {/* Apparel */}
+                            <div className="space-y-6">
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-6">
                                 Apparel
                               </h3>
+                              <ul className="space-y-3">
+                                {CATEGORIES.apparel.map((item) => (
+                                  <li key={item.name}>
+                                    <Link
+                                      href="/"
+                                      onMouseEnter={() => setHoveredItem(item)}
+                                      className={`group block text-sm font-medium transition-all duration-200 hover:translate-x-1 px-2 py-1.5 rounded ${
+                                        hoveredItem?.name === item.name 
+                                          ? 'text-purple-400 bg-purple-500/10' 
+                                          : 'text-slate-300 hover:text-purple-400'
+                                      }`}
+                                    >
+                                      {item.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                            <ul className="space-y-2.5">
-                              {['Jackets', 'Pants', 'Base Layers', 'Accessories'].map((item, idx) => (
-                                <li key={item}>
-                                  <Link
-                                    href="/"
-                                    className="group/item relative flex items-center gap-3 px-3 py-2 rounded-lg overflow-hidden transition-all duration-300 hover:bg-purple-500/5"
-                                  >
-                                    <span className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/20 to-purple-500/0 translate-x-[-100%] group-hover/item:translate-x-[100%] transition-transform duration-700" />
-
-                                    <span className="relative flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 border border-purple-500/20 group-hover/item:bg-purple-500/20 group-hover/item:border-purple-500/40 group-hover/item:scale-110 transition-all duration-300">
-                                      <span className="text-xs font-bold text-purple-400">{idx + 1}</span>
-                                    </span>
-
-                                    <span className="relative text-sm text-slate-300 group-hover/item:text-purple-300 group-hover/item:translate-x-1 transition-all duration-300">
-                                      {item}
-                                    </span>
-
-                                    <svg className="relative ml-auto h-3.5 w-3.5 text-slate-600 opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 group-hover/item:text-purple-400 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
                           </div>
                         </div>
 
-                        <div className="mt-7 pt-6 border-t border-slate-800/60">
-                          <Link
-                            href="/"
-                            className="group/banner relative block rounded-xl bg-gradient-to-r from-sky-500/10 via-blue-500/10 to-purple-500/10 border border-sky-500/20 p-5 overflow-hidden transition-all duration-300 hover:border-sky-500/40 hover:shadow-lg hover:shadow-sky-500/20"
-                          >
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(56,189,248,0.15),transparent_70%)] opacity-0 group-hover/banner:opacity-100 transition-opacity duration-500" />
-
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover/banner:translate-x-[100%] transition-transform duration-1000" />
-
-                            <div className="relative flex items-center justify-between">
+                        {/* Image Preview */}
+                        <div className="p-10 flex flex-col justify-center">
+                          {hoveredItem ? (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-300">
+                              <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-slate-800/50">
+                                <img 
+                                  src={hoveredItem.image} 
+                                  alt={hoveredItem.name}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                              </div>
                               <div>
-                                <p className="text-xs font-bold text-sky-300 mb-1 flex items-center gap-2">
-                                  <span className="flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-sky-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-400"></span>
-                                  </span>
-                                  Winter Collection 2025
-                                </p>
-                                <p className="text-xs text-slate-400 group-hover/banner:text-slate-300 transition-colors">
-                                  Explore the latest gear & accessories
+                                <h4 className="text-base font-bold text-slate-100 mb-1">
+                                  {hoveredItem.name}
+                                </h4>
+                                <p className="text-sm text-slate-400">
+                                  {hoveredItem.description}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 text-white text-xs font-bold shadow-lg shadow-sky-500/50 group-hover/banner:shadow-xl group-hover/banner:shadow-sky-500/60 group-hover/banner:scale-105 transition-all">
+                              <button className="w-full rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:from-sky-400 hover:to-blue-500 transition-all duration-200 shadow-lg shadow-sky-500/30">
+                                Shop {hoveredItem.name}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-center space-y-4">
+                              <div className="w-16 h-16 mx-auto rounded-full bg-slate-800/50 flex items-center justify-center">
+                                <svg className="w-8 h-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <p className="text-sm text-slate-500">
+                                Hover over a category to preview
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Featured Banner */}
+                      <div className="px-10 pb-10">
+                        <div className="pt-8 border-t border-slate-800/50">
+                          <Link
+                            href="/"
+                            className="group block rounded-xl border border-slate-800/50 bg-slate-900/30 p-6 hover:border-slate-700 hover:bg-slate-900/50 transition-all duration-200"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-bold text-sky-400 mb-1.5">
+                                  Winter Collection 2025
+                                </p>
+                                <p className="text-sm text-slate-400">
+                                  Explore the latest gear and accessories
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm font-medium text-slate-300 group-hover:text-sky-400 transition-colors">
                                 <span>View All</span>
-                                <svg className="h-3.5 w-3.5 group-hover/banner:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                <svg className="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                               </div>
                             </div>
@@ -623,8 +704,25 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile menu drawer */}
+      {/* Mobile menu drawer - keeping existing code */}
       {menuOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              animation: 'fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards'
+            }}
+          />
+
+          <div
+            className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-slate-950 z-50 md:hidden shadow-2xl shadow-black"
+            style={{
+              animation: 'slideInSmooth 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards'
+            }}
+          >
+            {/* ...existing mobile menu code... */}
+             {menuOpen && (
         <>
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
@@ -783,7 +881,7 @@ export default function Header() {
                   </svg>
                   <span>{isAuthenticated ? "Go to Account" : "Sign In / Register"}</span>
                 </button>
-                {/* Sign Out - mobile menu, only when authenticated */}
+
                 {isAuthenticated && (
                   <button
                     onClick={() => {
@@ -851,8 +949,43 @@ export default function Header() {
               </div>
             </div>
           </div>
+
+          <style jsx>{`
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+
+            @keyframes slideInSmooth {
+              from {
+                transform: translateX(100%);
+              }
+              to {
+                transform: translateX(0);
+              }
+            }
+
+            @keyframes slideInItem {
+              from {
+                opacity: 0;
+                transform: translateX(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
+          `}</style>
+        </>
+      )}
+          </div>
         </>
       )}
     </header>
   );
 }
+
