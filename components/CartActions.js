@@ -45,6 +45,7 @@ export default function CartActions({ lineId, initialQuantity, cartId }) {
       );
 
       setQuantity(newQuantity);
+      window.dispatchEvent(new Event("cartUpdated"));
       router.refresh();
     } catch (error) {
       console.error("Error updating quantity:", error);
@@ -81,6 +82,7 @@ export default function CartActions({ lineId, initialQuantity, cartId }) {
         },
       );
 
+      window.dispatchEvent(new Event("cartUpdated"));
       router.refresh();
     } catch (error) {
       console.error("Error removing item:", error);
@@ -122,9 +124,8 @@ export default function CartActions({ lineId, initialQuantity, cartId }) {
           type="button"
           onClick={() => updateQuantity(quantity - 1)}
           disabled={isUpdating || quantity <= 1}
-          className={`${qtyBtnBase} ${qtyBtnColors} ${
-            quantity <= 1 ? "opacity-40 cursor-not-allowed" : ""
-          }`}
+          className={`${qtyBtnBase} ${qtyBtnColors} ${quantity <= 1 ? "opacity-40 cursor-not-allowed" : ""
+            }`}
         >
           –
         </button>
@@ -144,9 +145,8 @@ export default function CartActions({ lineId, initialQuantity, cartId }) {
         type="button"
         onClick={removeLine}
         disabled={isUpdating}
-        className={`${removeBtnBase} ${removeColors} ${
-          isUpdating ? "opacity-60 cursor-wait" : ""
-        }`}
+        className={`${removeBtnBase} ${removeColors} ${isUpdating ? "opacity-60 cursor-wait" : ""
+          }`}
       >
         <span className={removeIcon} />
         <span>Remove</span>

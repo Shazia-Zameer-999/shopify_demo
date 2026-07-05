@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { getCookie, THEME_COOKIE } from "@/utils/storage.client.js";
 import { getCartId, setCartId } from "@/utils/storage.client.js";
 
 export default function AddToCart({ variantId }) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
-  
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
+
   const theme = getCookie(THEME_COOKIE) || "dark";
   const isDark = theme === "dark";
 
@@ -70,8 +73,8 @@ export default function AddToCart({ variantId }) {
       data.cartCreate.cart.id
     ) {
       setCartId(data.cartCreate.cart.id);
-
-      const saved = getCartId();
+      await syncAuthenticatedCart(data.cartCreate.cart.id);
+      window.dispatchEvent(new Event("cartUpdated"));
     }
 
     return data.cartCreate;
@@ -102,9 +105,27 @@ export default function AddToCart({ variantId }) {
       data.cartLinesAdd.cart.id
     ) {
       setCartId(data.cartLinesAdd.cart.id);
+      await syncAuthenticatedCart(data.cartLinesAdd.cart.id);
+      window.dispatchEvent(new Event("cartUpdated"));
     }
 
     return data.cartLinesAdd;
+  }
+
+  async function syncAuthenticatedCart(cartId) {
+    if (!isAuthenticated || !cartId) return;
+
+    try {
+      await fetch("/api/cart/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ cartId }),
+      });
+    } catch (error) {
+      console.error("Failed to sync cart to authenticated user:", error);
+    }
   }
 
   async function shopifyFetch(query, variables) {
@@ -177,10 +198,10 @@ export default function AddToCart({ variantId }) {
       >
         {/* Animated radial glow background */}
         <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_0%_0%,rgba(56,189,248,0.4),transparent_55%),radial-gradient(circle_at_100%_100%,rgba(59,130,246,0.4),transparent_55%)] opacity-0 transition-opacity duration-500 group-hover/btn:opacity-100" />
-        
+
         {/* Pulse ring on hover */}
         <span className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-sky-400/0 transition-all duration-300 group-hover/btn:ring-sky-400/50 group-hover/btn:scale-105" />
-        
+
         {/* Button content */}
         <span className="relative flex items-center gap-2">
           {isAddingToCart ? (
@@ -211,10 +232,10 @@ export default function AddToCart({ variantId }) {
       >
         {/* Sweep sheen animation - moves across button */}
         <span className="pointer-events-none absolute inset-0 -translate-x-full rounded-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent)] transition-transform duration-700 group-hover/btn:translate-x-full" />
-        
+
         {/* Glow effect */}
-        <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 blur-sm transition-opacity duration-300 group-hover/btn:opacity-100" />
-        
+        <span className="pointer-events-none absolute inset-0 rounded-full bg-linear-to-r from-transparent via-white/20 to-transparent opacity-0 blur-sm transition-opacity duration-300 group-hover/btn:opacity-100" />
+
         {/* Button content */}
         <span className="relative flex items-center gap-2">
           {isBuyingNow ? (
