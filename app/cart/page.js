@@ -125,6 +125,8 @@ const { cartId } = await getCartContext({ allowCookieWrite: false });
   "https://snowline-alpine-outfitters-2.myshopify.com",
   "https://store.datendiva.me"
 );
+console.log("Checkout URL:", cart.checkoutUrl);
+
 
   if (!cart || !cart.lines.edges.length) {
     return <EmptyCart />;
