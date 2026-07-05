@@ -5,10 +5,7 @@ import CartActions from "@/components/CartActions";
 import { headers } from "next/headers";
 import { getCartContext } from "@/lib/cartContext";
 
-const checkoutUrl = cart.checkoutUrl.replace(
-  "https://snowline-alpine-outfitters-2.myshopify.com",
-  "https://store.datendiva.me"
-);
+
 const GET_CART_QUERY = `
   query GetCart($cartId: ID!) {
     cart(id: $cartId) {
@@ -124,6 +121,10 @@ const { cartId } = await getCartContext({ allowCookieWrite: false });
 
   const data = await fetchCart(cartId);
   const cart = data?.cart;
+  const checkoutUrl = cart.checkoutUrl.replace(
+  "https://snowline-alpine-outfitters-2.myshopify.com",
+  "https://store.datendiva.me"
+);
 
   if (!cart || !cart.lines.edges.length) {
     return <EmptyCart />;
