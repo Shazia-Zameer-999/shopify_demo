@@ -121,12 +121,6 @@ const { cartId } = await getCartContext({ allowCookieWrite: false });
 
   const data = await fetchCart(cartId);
   const cart = data?.cart;
-  const checkoutUrl = cart.checkoutUrl.replace(
-  "https://snowline-alpine-outfitters-2.myshopify.com",
-  "https://store.datendiva.me"
-);
-console.log("Checkout URL:", cart.checkoutUrl);
-
 
   if (!cart || !cart.lines.edges.length) {
     return <EmptyCart />;
@@ -280,7 +274,7 @@ console.log("Checkout URL:", cart.checkoutUrl);
             {/* Checkout CTA */}
             <div className="mt-6 space-y-3">
               <a
-                href={checkoutUrl}
+                href={cart.checkoutUrl}
                 className="relative flex w-full items-center justify-center overflow-hidden rounded-full border border-sky-500/80 bg-sky-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_14px_45px_rgba(56,189,248,0.65)] transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 <span className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.45),transparent)] opacity-0 transition-opacity duration-300 hover:opacity-100" />
