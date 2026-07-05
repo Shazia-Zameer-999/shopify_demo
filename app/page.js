@@ -83,7 +83,10 @@ async function getProducts({ first, after, last, before }) {
   };
 
   try {
-    const response = await fetch(URL, options);
+    const response = await fetch(URL, {
+      ...options,
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       const text = await response.text();
@@ -135,10 +138,10 @@ function DarkLayout({ products, pageInfo }) {
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.20),transparent_55%),radial-gradient(circle_at_bottom,_rgba(15,23,42,0.9),transparent_55%)]" />
 
       <div className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6 lg:px-8 lg:pt-14">
-        
+
         {/* UNIFIED CARD SHELL - Bridge + Products in ONE */}
         <div className="rounded-3xl border border-slate-800/60 bg-slate-950/70 shadow-[0_18px_45px_rgba(15,23,42,0.9)] backdrop-blur-sm overflow-hidden">
-          
+
           {/* BRIDGE SECTION INSIDE CARD */}
           <section className="border-b border-slate-800/50 px-5 py-8 sm:px-7 sm:py-9 lg:px-9 lg:py-10">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
@@ -271,10 +274,10 @@ function LightLayout({ products, pageInfo }) {
       <div className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-slate-100 via-white to-slate-100" />
 
       <div className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 lg:px-8 lg:pt-14">
-        
+
         {/* UNIFIED CARD SHELL - Bridge + Products in ONE */}
         <div className="rounded-3xl border border-slate-200 bg-white/95 shadow-sm shadow-slate-200 overflow-hidden">
-          
+
           {/* BRIDGE SECTION INSIDE CARD */}
           <section className="border-b border-slate-100 px-5 py-8 sm:px-7 sm:py-9 lg:px-9 lg:py-10">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
@@ -473,7 +476,7 @@ export default async function Home({ searchParams }) {
   const perPage = 9;
 
 
-  let theme = "dark"; 
+  let theme = "dark";
   try {
     const headersList = await headers();
     const cookieHeader = headersList.get("cookie") || "";

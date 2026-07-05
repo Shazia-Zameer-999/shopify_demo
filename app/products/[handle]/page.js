@@ -90,7 +90,10 @@ async function getProduct(handle) {
   };
 
   try {
-    const response = await fetch(URL, options);
+    const response = await fetch(URL, {
+      ...options,
+      cache: "no-store",
+    });
     const data = await response.json();
     return data.data.product;
   } catch (error) {
@@ -161,11 +164,11 @@ export default async function ProductPage({ params }) {
       {/* Background gradients */}
       {isDark ? (
         <>
-          <div className="pointer-events-none fixed inset-0 -z-20 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900" />
-          <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),transparent_55%),radial-gradient(circle_at_bottom,_rgba(15,23,42,0.9),transparent_55%)]" />
+          <div className="pointer-events-none fixed inset-0 -z-20 bg-linear-to-b from-slate-900 via-slate-950 to-slate-900" />
+          <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_55%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.9),transparent_55%)]" />
         </>
       ) : (
-        <div className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-slate-100 via-white to-slate-100" />
+        <div className="pointer-events-none fixed inset-0 -z-10 bg-linear-to-b from-slate-100 via-white to-slate-100" />
       )}
 
       <div className="mx-auto max-w-6xl px-4 pb-20 pt-8 sm:px-6 lg:px-8 lg:pt-14">
@@ -207,7 +210,7 @@ export default async function ProductPage({ params }) {
 
         {/* Main product shell */}
         <section
-          className={`grid gap-10 rounded-3xl border p-5 sm:p-7 lg:grid-cols-[minmax(0,_1.2fr)_minmax(0,_1fr)] lg:gap-12 lg:p-9 ${shellBg}`}
+          className={`grid gap-10 rounded-3xl border p-5 sm:p-7 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-12 lg:p-9 ${shellBg}`}
         >
           {/* LEFT: Gallery - REPLACE ENTIRE SECTION WITH THIS: */}
           <ImageGallery
@@ -309,12 +312,12 @@ export default async function ProductPage({ params }) {
                 </div>
                 <div
                   className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] ${product.availableForSale
-                      ? isDark
-                        ? "border-emerald-700 bg-emerald-900/30 text-emerald-300"
-                        : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : isDark
-                        ? "border-red-700 bg-red-900/30 text-red-300"
-                        : "border-red-200 bg-red-50 text-red-700"
+                    ? isDark
+                      ? "border-emerald-700 bg-emerald-900/30 text-emerald-300"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : isDark
+                      ? "border-red-700 bg-red-900/30 text-red-300"
+                      : "border-red-200 bg-red-50 text-red-700"
                     }`}
                 >
                   {product.availableForSale ? "✅ Ready to ship" : "❌ Out of stock"}

@@ -25,7 +25,7 @@ export default function CartActions({ lineId, initialQuantity, cartId }) {
     `;
 
     try {
-      await fetch(
+      const response = await fetch(
         `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`,
         {
           method: "POST",
@@ -43,6 +43,16 @@ export default function CartActions({ lineId, initialQuantity, cartId }) {
           }),
         },
       );
+
+      const json = await response.json();
+      const userErrors = json?.data?.cartLinesUpdate?.userErrors || [];
+      if (userErrors.length) {
+        throw new Error(userErrors.map((error) => error.message).join(" | "));
+      }
+
+      if (!json?.data?.cartLinesUpdate?.cart?.id) {
+        throw new Error("Shopify did not return a cart after quantity update");
+      }
 
       setQuantity(newQuantity);
       window.dispatchEvent(new Event("cartUpdated"));
@@ -66,7 +76,7 @@ export default function CartActions({ lineId, initialQuantity, cartId }) {
     `;
 
     try {
-      await fetch(
+      const response = await fetch(
         `https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`,
         {
           method: "POST",
@@ -81,6 +91,16 @@ export default function CartActions({ lineId, initialQuantity, cartId }) {
           }),
         },
       );
+
+      const json = await response.json();
+      const userErrors = json?.data?.cartLinesRemove?.userErrors || [];
+      if (userErrors.length) {
+        throw new Error(userErrors.map((error) => error.message).join(" | "));
+      }
+
+      if (!json?.data?.cartLinesRemove?.cart?.id) {
+        throw new Error("Shopify did not return a cart after removing a line");
+      }
 
       window.dispatchEvent(new Event("cartUpdated"));
       router.refresh();

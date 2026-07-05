@@ -64,6 +64,15 @@ export default function AddToCart({ variantId }) {
       lines: [{ merchandiseId: variantId, quantity: 1 }],
     });
 
+    const userErrors = data?.cartCreate?.userErrors || [];
+    if (userErrors.length) {
+      throw new Error(userErrors.map((error) => error.message).join(" | "));
+    }
+
+    if (!data?.cartCreate?.cart?.id) {
+      throw new Error("Shopify did not return a cart after create");
+    }
+
 
     if (
       saveCart &&
@@ -95,6 +104,15 @@ export default function AddToCart({ variantId }) {
       cartId,
       lines: [{ merchandiseId: variantId, quantity: 1 }],
     });
+
+    const userErrors = data?.cartLinesAdd?.userErrors || [];
+    if (userErrors.length) {
+      throw new Error(userErrors.map((error) => error.message).join(" | "));
+    }
+
+    if (!data?.cartLinesAdd?.cart?.id) {
+      throw new Error("Shopify did not return a cart after add");
+    }
 
 
     if (
