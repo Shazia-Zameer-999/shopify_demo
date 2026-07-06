@@ -1,7 +1,10 @@
 <svg
   xmlns="http://www.w3.org/2000/svg"
   viewBox="0 0 32 32"
+  width="128"
+  height="128"
   fill="none"
+  style="background: transparent;"
 >
   <path
     d="M4 22C7 19 11 18 16 18C21 18 25 19 28 22"
